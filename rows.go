@@ -11,15 +11,8 @@ package mysql
 import (
 	"database/sql/driver"
 	"io"
+	"reflect"
 )
-
-type mysqlField struct {
-	tableName string
-	name      string
-	flags     fieldFlag
-	fieldType byte
-	decimals  byte
-}
 
 type resultSet struct {
 	columns     []mysqlField
@@ -63,6 +56,21 @@ func (rows *mysqlRows) Columns() []string {
 
 	rows.rs.columnNames = columns
 	return columns
+}
+
+func (rows *mysqlRows) ColumnTypeDatabaseTypeName(i int) string {
+	if name, ok := typeDatabaseName[rows.rs.columns[i].fieldType]; ok {
+		return name
+	}
+	return ""
+}
+
+func (rows *mysqlRows) ColumnTypeNullable(i int) (nullable, ok bool) {
+	return rows.rs.columns[i].flags&flagNotNULL != 0, true
+}
+
+func (rows *mysqlRows) ColumnTypeScanType(i int) reflect.Type {
+	return rows.rs.columns[i].scanType()
 }
 
 func (rows *mysqlRows) Close() (err error) {
